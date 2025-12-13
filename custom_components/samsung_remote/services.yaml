@@ -1,0 +1,69 @@
+send_key:
+  name: Send Key
+  description: Send a remote control key to the Samsung TV
+  fields:
+    entry_id:
+      name: Entry ID
+      description: The config entry ID of the Samsung TV Remote
+      required: true
+      selector:
+        text:
+    key:
+      name: Key
+      description: The remote control key to send
+      required: true
+      example: "POWER"
+      selector:
+        select:
+          options:
+            - POWER
+            - POWER_ON
+            - POWER_OFF
+            - UP
+            - DOWN
+            - LEFT
+            - RIGHT
+            - OK
+            - ENTER
+            - BACK
+            - HOME
+            - MENU
+            - EXIT
+            - MUTE
+            - UNMUTE
+            - VOLUME_UP
+            - VOLUME_DOWN
+            - PLAY
+            - PAUSE
+            - STOP
+            - REWIND
+            - FF
+            - FAST_FORWARD
+            - SOURCE
+            - HDMI
+            - HDMI1
+            - HDMI2
+            - HDMI3
+            - HDMI4
+            - CHANNEL_UP
+            - CHANNEL_DOWN
+            - PRECH
+            - CH_LIST
+            - "0"
+            - "1"
+            - "2"
+            - "3"
+            - "4"
+            - "5"
+            - "6"
+            - "7"
+            - "8"
+            - "9"
+            - RED
+            - GREEN
+            - YELLOW
+            - BLUE
+            - GUIDE
+            - INFO
+            - TOOLS
+            - SETTINGS

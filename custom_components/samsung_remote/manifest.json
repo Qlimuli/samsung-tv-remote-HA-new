@@ -1,0 +1,12 @@
+{
+  "domain": "samsung_remote",
+  "name": "Samsung TV Remote",
+  "codeowners": ["@Qlimuli"],
+  "config_flow": true,
+  "dependencies": ["smartthings"],
+  "documentation": "https://github.com/Qlimuli/samsung-tv-remote-HA",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Qlimuli/samsung-tv-remote-HA/issues",
+  "requirements": ["aiohttp>=3.8.0"],
+  "version": "2.0.0"
+}

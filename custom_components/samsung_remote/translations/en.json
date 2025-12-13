@@ -1,0 +1,41 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Samsung TV Remote Setup",
+        "description": "Select your SmartThings integration to use for authentication. Found {count} SmartThings integration(s).",
+        "data": {
+          "smartthings_entry": "SmartThings Integration"
+        }
+      },
+      "select_tv": {
+        "title": "Select Samsung TV",
+        "description": "Found {count} Samsung TV(s) in your SmartThings account. Select the TV you want to control.",
+        "data": {
+          "device_id": "Samsung TV"
+        }
+      }
+    },
+    "error": {
+      "invalid_entry": "Invalid SmartThings integration selected",
+      "invalid_device": "Invalid device selected",
+      "cannot_connect": "Cannot connect to SmartThings API",
+      "unknown": "Unknown error occurred"
+    },
+    "abort": {
+      "no_smartthings": "No SmartThings integration found. Please set up the SmartThings integration first.",
+      "no_tvs_found": "No Samsung TVs found in your SmartThings account. Make sure your TV is connected to SmartThings.",
+      "already_configured": "This TV is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Samsung TV Remote Options",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  }
+}

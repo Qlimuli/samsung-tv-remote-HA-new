@@ -1,0 +1,41 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Samsung TV Fernbedienung Einrichtung",
+        "description": "Wählen Sie Ihre SmartThings Integration für die Authentifizierung. {count} SmartThings Integration(en) gefunden.",
+        "data": {
+          "smartthings_entry": "SmartThings Integration"
+        }
+      },
+      "select_tv": {
+        "title": "Samsung TV auswählen",
+        "description": "{count} Samsung TV(s) in Ihrem SmartThings-Konto gefunden. Wählen Sie den TV, den Sie steuern möchten.",
+        "data": {
+          "device_id": "Samsung TV"
+        }
+      }
+    },
+    "error": {
+      "invalid_entry": "Ungültige SmartThings Integration ausgewählt",
+      "invalid_device": "Ungültiges Gerät ausgewählt",
+      "cannot_connect": "Verbindung zur SmartThings API nicht möglich",
+      "unknown": "Unbekannter Fehler aufgetreten"
+    },
+    "abort": {
+      "no_smartthings": "Keine SmartThings Integration gefunden. Bitte richten Sie zuerst die SmartThings Integration ein.",
+      "no_tvs_found": "Keine Samsung TVs in Ihrem SmartThings-Konto gefunden. Stellen Sie sicher, dass Ihr TV mit SmartThings verbunden ist.",
+      "already_configured": "Dieser TV ist bereits konfiguriert"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Samsung TV Fernbedienung Optionen",
+        "data": {
+          "scan_interval": "Aktualisierungsintervall (Sekunden)"
+        }
+      }
+    }
+  }
+}

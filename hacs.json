@@ -1,0 +1,7 @@
+{
+  "name": "Samsung TV Remote",
+  "render_readme": true,
+  "homeassistant": "2024.1.0",
+  "domains": ["remote"],
+  "country": ["DE", "EN"]
+}
