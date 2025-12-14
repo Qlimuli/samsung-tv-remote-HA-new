@@ -19,7 +19,14 @@ from .smartthings_bridge import SmartThingsBridge
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.REMOTE]
+PLATFORMS: list[Platform] = [
+    Platform.REMOTE,
+    Platform.BUTTON,
+    Platform.SWITCH,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SENSOR,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

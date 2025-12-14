@@ -33,6 +33,7 @@ class SmartThingsBridge:
         self.device_id = device_id
         self._device_info: dict[str, Any] = {}
         self._available = False
+        self._cached_status: dict[str, Any] = {}
     
     @property
     def available(self) -> bool:
@@ -210,13 +211,14 @@ class SmartThingsBridge:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, headers=headers) as response:
                     if response.status == 200:
-                        return await response.json()
+                        self._cached_status = await response.json()
+                        return self._cached_status
                     else:
                         _LOGGER.warning("Failed to get device status: %s", response.status)
-                        return {}
+                        return self._cached_status
         except Exception as err:
             _LOGGER.error("Error getting device status: %s", err)
-            return {}
+            return self._cached_status
     
     async def get_power_state(self) -> bool:
         """Get the power state of the TV."""
@@ -226,6 +228,148 @@ class SmartThingsBridge:
             return switch_status.get("switch", {}).get("value") == "on"
         except (KeyError, TypeError):
             return False
+    
+    async def get_mute_state(self) -> bool:
+        """Get the mute state of the TV."""
+        status = await self.get_device_status()
+        try:
+            mute_status = status.get("components", {}).get("main", {}).get("audioMute", {})
+            return mute_status.get("mute", {}).get("value") == "muted"
+        except (KeyError, TypeError):
+            return False
+    
+    async def get_volume(self) -> int | None:
+        """Get the current volume level."""
+        status = await self.get_device_status()
+        try:
+            volume_status = status.get("components", {}).get("main", {}).get("audioVolume", {})
+            return volume_status.get("volume", {}).get("value")
+        except (KeyError, TypeError):
+            return None
+    
+    async def set_volume(self, volume: int) -> bool:
+        """Set the volume level."""
+        token = self._get_access_token()
+        if not token:
+            return False
+        
+        url = f"{SMARTTHINGS_API_BASE}/devices/{self.device_id}/commands"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        
+        payload = {
+            "commands": [
+                {
+                    "component": "main",
+                    "capability": "audioVolume",
+                    "command": "setVolume",
+                    "arguments": [volume],
+                }
+            ]
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload) as response:
+                    return response.status == 200
+        except Exception as err:
+            _LOGGER.error("Error setting volume: %s", err)
+            return False
+    
+    async def get_channel(self) -> int | None:
+        """Get the current channel number."""
+        status = await self.get_device_status()
+        try:
+            channel_status = status.get("components", {}).get("main", {}).get("tvChannel", {})
+            channel = channel_status.get("tvChannel", {}).get("value")
+            if channel:
+                try:
+                    return int(channel)
+                except (ValueError, TypeError):
+                    return None
+            return None
+        except (KeyError, TypeError):
+            return None
+    
+    async def set_channel(self, channel: int) -> bool:
+        """Set the TV channel."""
+        token = self._get_access_token()
+        if not token:
+            return False
+        
+        url = f"{SMARTTHINGS_API_BASE}/devices/{self.device_id}/commands"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        
+        payload = {
+            "commands": [
+                {
+                    "component": "main",
+                    "capability": "tvChannel",
+                    "command": "setTvChannel",
+                    "arguments": [str(channel)],
+                }
+            ]
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload) as response:
+                    return response.status == 200
+        except Exception as err:
+            _LOGGER.error("Error setting channel: %s", err)
+            return False
+    
+    async def get_input_source(self) -> str | None:
+        """Get the current input source."""
+        status = await self.get_device_status()
+        try:
+            input_status = status.get("components", {}).get("main", {}).get("mediaInputSource", {})
+            return input_status.get("inputSource", {}).get("value")
+        except (KeyError, TypeError):
+            return None
+    
+    async def get_current_activity(self) -> str | None:
+        """Get the current activity (playing, paused, etc.)."""
+        status = await self.get_device_status()
+        try:
+            playback_status = status.get("components", {}).get("main", {}).get("mediaPlayback", {})
+            return playback_status.get("playbackStatus", {}).get("value")
+        except (KeyError, TypeError):
+            return None
+    
+    async def get_media_title(self) -> str | None:
+        """Get the current media title."""
+        status = await self.get_device_status()
+        try:
+            # Try mediaTrackData first
+            track_data = status.get("components", {}).get("main", {}).get("mediaTrackData", {})
+            title = track_data.get("mediaTrackData", {}).get("value", {})
+            if isinstance(title, dict):
+                return title.get("title")
+            return None
+        except (KeyError, TypeError):
+            return None
+    
+    async def get_current_app(self) -> str | None:
+        """Get the current running app."""
+        status = await self.get_device_status()
+        try:
+            # Try different capability names that Samsung TVs might use
+            for cap_name in ["samsungvd.launchApp", "custom.launchApp", "mediaInputSource"]:
+                app_status = status.get("components", {}).get("main", {}).get(cap_name, {})
+                if app_status:
+                    for key in ["appName", "currentApp", "inputSource"]:
+                        app = app_status.get(key, {}).get("value")
+                        if app:
+                            return app
+            return None
+        except (KeyError, TypeError):
+            return None
 
 
 async def get_smartthings_token(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
