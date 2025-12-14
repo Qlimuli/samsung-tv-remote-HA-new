@@ -9,86 +9,23 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers import config_entry_flow
 
 from .const import DOMAIN, CONF_DEVICE_ID, CONF_DEVICE_NAME, CONF_SMARTTHINGS_ENTRY_ID
-from .smartthings_bridge import SmartThingsBridge
+from .smartthings_bridge import get_samsung_tvs_from_api, get_smartthings_token
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def _get_smartthings_entries(hass: HomeAssistant) -> list[config_entries.ConfigEntry]:
     """Get all SmartThings config entries."""
-    return [
-        entry
-        for entry in hass.config_entries.async_entries("smartthings")
-        if entry.state == config_entries.ConfigEntryState.LOADED
-    ]
-
-
-async def _get_samsung_tvs(hass: HomeAssistant, smartthings_entry: config_entries.ConfigEntry) -> list[dict[str, str]]:
-    """Get Samsung TVs from SmartThings."""
-    tvs = []
+    entries = []
     
-    # Access SmartThings data to get devices
-    smartthings_data = hass.data.get("smartthings", {})
+    for domain in ["smartthings", "smartthings2"]:
+        for entry in hass.config_entries.async_entries(domain):
+            if entry.state == config_entries.ConfigEntryState.LOADED:
+                entries.append(entry)
     
-    # Try to get devices from the integration
-    if smartthings_entry.entry_id in smartthings_data:
-        entry_data = smartthings_data[smartthings_entry.entry_id]
-        
-        # Check for devices in broker
-        if isinstance(entry_data, dict) and "broker" in entry_data:
-            broker = entry_data["broker"]
-            if hasattr(broker, "devices"):
-                for device in broker.devices.values():
-                    if _is_samsung_tv(device):
-                        tvs.append({
-                            "id": device.device_id,
-                            "name": device.label or device.name,
-                        })
-    
-    # Fallback: Check runtime_data
-    if hasattr(smartthings_entry, "runtime_data"):
-        runtime_data = smartthings_entry.runtime_data
-        if hasattr(runtime_data, "devices"):
-            for device in runtime_data.devices.values():
-                if _is_samsung_tv(device):
-                    if not any(tv["id"] == device.device_id for tv in tvs):
-                        tvs.append({
-                            "id": device.device_id,
-                            "name": getattr(device, "label", None) or getattr(device, "name", "Samsung TV"),
-                        })
-    
-    return tvs
-
-
-def _is_samsung_tv(device: Any) -> bool:
-    """Check if a device is a Samsung TV."""
-    # Check device type
-    device_type = getattr(device, "type", "").lower()
-    if "tv" in device_type or "samsung" in device_type:
-        return True
-    
-    # Check capabilities
-    capabilities = getattr(device, "capabilities", [])
-    if isinstance(capabilities, list):
-        cap_names = [c.lower() if isinstance(c, str) else getattr(c, "id", "").lower() for c in capabilities]
-        tv_capabilities = ["samsungvd.remotecontrol", "tvChannel", "mediaPlayback"]
-        if any(cap in cap_names for cap in tv_capabilities):
-            return True
-    
-    # Check OCF device type
-    ocf_type = getattr(device, "ocf_device_type", "")
-    if "tv" in ocf_type.lower():
-        return True
-    
-    # Check device category
-    category = getattr(device, "device_category", "")
-    if "television" in category.lower() or "tv" in category.lower():
-        return True
-    
-    return False
+    return entries
 
 
 class SamsungRemoteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -117,6 +54,11 @@ class SamsungRemoteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # If only one SmartThings entry, skip selection
         if len(self._smartthings_entries) == 1:
             self._selected_smartthings_entry = self._smartthings_entries[0]
+            
+            token = await get_smartthings_token(self.hass, self._selected_smartthings_entry)
+            if not token:
+                return self.async_abort(reason="no_token")
+            
             return await self.async_step_select_tv()
         
         if user_input is not None:
@@ -126,12 +68,17 @@ class SamsungRemoteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 None,
             )
             if self._selected_smartthings_entry:
-                return await self.async_step_select_tv()
-            errors["base"] = "invalid_entry"
+                token = await get_smartthings_token(self.hass, self._selected_smartthings_entry)
+                if not token:
+                    errors["base"] = "no_token"
+                else:
+                    return await self.async_step_select_tv()
+            else:
+                errors["base"] = "invalid_entry"
         
         # Create entry selection schema
         entry_options = {
-            entry.entry_id: entry.title or "SmartThings"
+            entry.entry_id: entry.title or f"SmartThings ({entry.domain})"
             for entry in self._smartthings_entries
         }
         
@@ -155,10 +102,10 @@ class SamsungRemoteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not self._selected_smartthings_entry:
             return self.async_abort(reason="no_smartthings")
         
-        # Get available Samsung TVs
-        self._available_tvs = await _get_samsung_tvs(
-            self.hass, self._selected_smartthings_entry
-        )
+        if not self._available_tvs:
+            self._available_tvs = await get_samsung_tvs_from_api(
+                self.hass, self._selected_smartthings_entry
+            )
         
         if not self._available_tvs:
             return self.async_abort(reason="no_tvs_found")

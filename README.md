@@ -6,16 +6,18 @@ Eine HACS-kompatible Home Assistant Custom Integration zur Steuerung von Samsung
 
 ## Hauptmerkmale
 
-- **Automatische Authentifizierung** - Nutzt die bestehende SmartThings Integration
+- **Automatische Authentifizierung** - Nutzt die bestehende SmartThings Integration (OAuth)
 - **Kein Token-Management** - OAuth wird komplett von SmartThings gehandhabt
+- **Direkte API-Kommunikation** - Greift direkt auf die SmartThings API zu
 - **UI-Konfiguration** - Einfache Einrichtung über die Home Assistant Oberfläche
 - **40+ Fernbedienungsbefehle** - Alle wichtigen TV-Funktionen
 - **Mehrsprachig** - Deutsch und Englisch
 
 ## Voraussetzungen
 
-1. **SmartThings Integration** muss bereits in Home Assistant eingerichtet sein
+1. **SmartThings Integration** muss bereits in Home Assistant eingerichtet und authentifiziert sein
 2. Ihr Samsung TV muss mit Ihrem SmartThings-Konto verbunden sein
+3. Home Assistant 2024.1.0 oder höher
 
 ## Installation
 
@@ -39,6 +41,19 @@ Eine HACS-kompatible Home Assistant Custom Integration zur Steuerung von Samsung
 3. Ihre SmartThings Integration auswählen (falls mehrere vorhanden)
 4. Ihren Samsung TV aus der Liste wählen
 5. Fertig!
+
+## Wie die Authentifizierung funktioniert
+
+Diese Integration verwendet die **bereits eingerichtete SmartThings Integration** für die Authentifizierung:
+
+1. Die SmartThings Integration speichert OAuth-Tokens in Home Assistant
+2. Diese Integration greift auf diese Tokens zu (genau wie die native Integration)
+3. API-Aufrufe werden direkt an die SmartThings API gesendet
+4. Keine separate Authentifizierung oder Token-Verwaltung erforderlich
+
+**Unterstützte SmartThings Integrationen:**
+- Native Home Assistant SmartThings Integration (`smartthings`)
+- SmartThings2 Custom Integration (`smartthings2`)
 
 ## Verwendung
 
@@ -64,6 +79,20 @@ data:
     - "HOME"
     - "DOWN"
     - "OK"
+\`\`\`
+
+### TV Ein-/Ausschalten
+
+\`\`\`yaml
+# Einschalten
+service: remote.turn_on
+target:
+  entity_id: remote.samsung_tv_wohnzimmer
+
+# Ausschalten
+service: remote.turn_off
+target:
+  entity_id: remote.samsung_tv_wohnzimmer
 \`\`\`
 
 ### In Automationen
@@ -105,13 +134,40 @@ automation:
 Stellen Sie sicher, dass die SmartThings Integration bereits eingerichtet ist:
 1. Einstellungen → Geräte & Dienste
 2. SmartThings Integration hinzufügen (falls nicht vorhanden)
-3. Mit Samsung-Konto anmelden
+3. Mit Samsung-Konto anmelden und OAuth-Autorisierung durchführen
 
 ### "Keine Samsung TVs gefunden"
 
 - Prüfen Sie, ob Ihr TV in der SmartThings App erscheint
 - TV muss mit dem gleichen SmartThings-Konto verbunden sein
 - TV muss eingeschaltet und mit dem Netzwerk verbunden sein
+- Stellen Sie sicher, dass die SmartThings Integration korrekt authentifiziert ist
+
+### "Zugriffstoken konnte nicht abgerufen werden"
+
+Die SmartThings Integration muss neu authentifiziert werden:
+1. SmartThings Integration in Home Assistant löschen
+2. SmartThings Integration neu einrichten
+3. OAuth-Autorisierung erneut durchführen
+4. Samsung TV Remote Integration neu einrichten
+
+### Debug-Logging aktivieren
+
+Fügen Sie Folgendes zu Ihrer `configuration.yaml` hinzu:
+
+\`\`\`yaml
+logger:
+  default: info
+  logs:
+    custom_components.samsung_remote: debug
+\`\`\`
+
+## Technische Details
+
+- **API-Endpunkt:** `https://api.smartthings.com/v1`
+- **Authentifizierung:** OAuth2 (über SmartThings Integration)
+- **Geräte-Erkennung:** Automatisch via SmartThings API
+- **Befehle:** Samsung VD Remote Control Capability
 
 ## Lizenz
 

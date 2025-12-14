@@ -20,11 +20,13 @@
       "invalid_entry": "Invalid SmartThings integration selected",
       "invalid_device": "Invalid device selected",
       "cannot_connect": "Cannot connect to SmartThings API",
+      "no_token": "Could not retrieve access token from SmartThings integration. Please re-authenticate SmartThings.",
       "unknown": "Unknown error occurred"
     },
     "abort": {
       "no_smartthings": "No SmartThings integration found. Please set up the SmartThings integration first.",
-      "no_tvs_found": "No Samsung TVs found in your SmartThings account. Make sure your TV is connected to SmartThings.",
+      "no_tvs_found": "No Samsung TVs found in your SmartThings account. Make sure your TV is connected to SmartThings and the SmartThings integration is properly authenticated.",
+      "no_token": "Could not retrieve access token from SmartThings. Please re-configure your SmartThings integration.",
       "already_configured": "This TV is already configured"
     }
   },
