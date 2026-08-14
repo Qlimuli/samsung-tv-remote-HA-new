@@ -211,7 +211,8 @@ class SamsungRemoteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(f"local_{self._host}")
             self._abort_if_unique_id_configured()
 
-            # Try a quick connection / pairing
+            # Try a quick connection / pairing (pure local – no SmartThings)
+            connected = False
             try:
                 from .local_bridge import LocalBridge
 
@@ -224,30 +225,39 @@ class SamsungRemoteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     mac=self._mac,
                 )
                 await bridge.async_initialize()
-                # Capture token if TV issued one
+                # Capture token if TV issued one during pairing
                 if bridge.token:
                     self._token = bridge.token
+                    connected = True
+                elif bridge.available:
+                    connected = True
                 await bridge.async_close()
             except Exception as err:
                 _LOGGER.warning("Local connection test failed: %s", err)
-                errors["base"] = "cannot_connect"
-                # Still allow creation – user may need to accept the popup first
-                if "cannot_connect" in errors and user_input.get("force", False):
-                    errors = {}
 
-            if not errors:
-                return self.async_create_entry(
-                    title=f"{self._device_name} (Local)",
-                    data={
-                        CONF_CONNECTION_MODE: MODE_LOCAL,
-                        CONF_HOST: self._host,
-                        CONF_PORT: self._port,
-                        CONF_TOKEN: self._token,
-                        CONF_MAC: self._mac,
-                        CONF_DEVICE_NAME: self._device_name,
-                        CONF_DEVICE_ID: f"local_{self._host}",
-                    },
+            # If pairing succeeded (token received or bridge available) we are done.
+            # Otherwise still create the entry – user can accept the TV popup and
+            # the integration will reconnect on first command / reload.
+            if not connected and not self._token:
+                # Soft warning only; do not block setup
+                _LOGGER.info(
+                    "Could not fully verify local connection to %s – "
+                    "accept the permission popup on the TV if shown, then reload.",
+                    self._host,
                 )
+
+            return self.async_create_entry(
+                title=f"{self._device_name} (Local)",
+                data={
+                    CONF_CONNECTION_MODE: MODE_LOCAL,
+                    CONF_HOST: self._host,
+                    CONF_PORT: self._port,
+                    CONF_TOKEN: self._token,
+                    CONF_MAC: self._mac,
+                    CONF_DEVICE_NAME: self._device_name,
+                    CONF_DEVICE_ID: f"local_{self._host}",
+                },
+            )
 
         return self.async_show_form(
             step_id="local",

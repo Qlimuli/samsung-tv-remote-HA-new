@@ -9,7 +9,9 @@ import asyncio
 import logging
 from typing import Any
 
+import aiohttp
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import LOCAL_KEY_MAP
 
@@ -44,6 +46,7 @@ class LocalBridge:
         name: str = "Home Assistant",
         mac: str | None = None,
         timeout: float = 5.0,
+        session: aiohttp.ClientSession | None = None,
     ) -> None:
         if not HAS_SAMSUNGTVWS:
             raise RuntimeError(
@@ -58,6 +61,8 @@ class LocalBridge:
         self.name = name
         self.mac = mac
         self.timeout = timeout
+        # Prefer HA's shared session; fall back only when none is provided
+        self._session = session or async_get_clientsession(hass)
 
         self._remote: SamsungTVWSAsyncRemote | None = None
         self._rest: SamsungTVAsyncRest | None = None
@@ -87,18 +92,21 @@ class LocalBridge:
 
     async def async_initialize(self) -> None:
         """Connect and fetch basic device info."""
-        await self._ensure_remote()
+        try:
+            await self._ensure_remote()
+        except Exception as err:
+            _LOGGER.debug("WebSocket connect during init: %s", err)
+
         try:
             info = await self._rest_device_info()
             if info:
                 self._device_info = info
+                self._power_on = True
             self._available = True
-            self._power_on = True
             _LOGGER.info("Local bridge connected to %s:%s", self.host, self.port)
         except Exception as err:
-            self._available = False
             _LOGGER.warning("Local bridge init partial failure on %s: %s", self.host, err)
-            # Still mark available if we at least got a token / connection
+            # Still mark available if we at least got a token / WS connection
             if self.token or self._remote is not None:
                 self._available = True
 
@@ -115,6 +123,17 @@ class LocalBridge:
     # Internal helpers
     # ------------------------------------------------------------------
 
+    def _get_rest(self) -> SamsungTVAsyncRest:
+        """Lazy-create REST client with required session argument."""
+        if self._rest is None:
+            self._rest = SamsungTVAsyncRest(
+                host=self.host,
+                session=self._session,
+                port=8001,  # REST is on 8001 on virtually all models
+                timeout=self.timeout,
+            )
+        return self._rest
+
     async def _ensure_remote(self) -> SamsungTVWSAsyncRemote:
         async with self._lock:
             if self._remote is not None:
@@ -130,37 +149,28 @@ class LocalBridge:
             try:
                 await remote.start_listening()
             except Exception as err:
-                _LOGGER.debug("start_listening failed (TV may be off): %s", err)
+                _LOGGER.debug("start_listening failed (TV may be off / pairing): %s", err)
+
             # Capture token if the TV issued a new one
-            if getattr(remote, "token", None) and remote.token != self.token:
-                self.token = remote.token
+            new_token = getattr(remote, "token", None)
+            if new_token and new_token != self.token:
+                self.token = new_token
                 _LOGGER.info("Received new token from TV %s", self.host)
 
             self._remote = remote
-
-            if self._rest is None:
-                self._rest = SamsungTVAsyncRest(
-                    host=self.host,
-                    port=8001,  # REST is usually on 8001
-                    timeout=self.timeout,
-                )
             return remote
 
     async def _rest_device_info(self) -> dict[str, Any]:
-        if self._rest is None:
-            self._rest = SamsungTVAsyncRest(
-                host=self.host, port=8001, timeout=self.timeout
-            )
         try:
-            return await self._rest.rest_device_info()
+            rest = self._get_rest()
+            return await rest.rest_device_info()
         except Exception as err:
             _LOGGER.debug("REST device info failed: %s", err)
             return {}
 
     def _map_key(self, command: str) -> str | None:
         """Map high-level command to KEY_*."""
-        cmd = command.upper()
-        return LOCAL_KEY_MAP.get(cmd)
+        return LOCAL_KEY_MAP.get(command.upper())
 
     # ------------------------------------------------------------------
     # Public API – same method names as SmartThingsBridge
@@ -173,8 +183,10 @@ class LocalBridge:
             _LOGGER.warning("Unknown local command: %s", command)
             return False
 
+        cmd = command.upper()
+
         # Special handling for power-on when TV is fully off
-        if command.upper() in ("POWER_ON", "POWER") and not self._power_on:
+        if cmd in ("POWER_ON", "POWER") and not self._power_on:
             if self.mac and wakeonlan is not None:
                 try:
                     await self.hass.async_add_executor_job(
@@ -189,10 +201,14 @@ class LocalBridge:
             remote = await self._ensure_remote()
             await remote.send_command(SendRemoteKey.click(key))
             self._available = True
-            if command.upper() in ("POWER_OFF", "POWER"):
+            if cmd in ("POWER_OFF", "POWER"):
                 self._power_on = False
-            elif command.upper() == "POWER_ON":
+            elif cmd == "POWER_ON":
                 self._power_on = True
+            elif cmd == "MUTE":
+                self._mute = True
+            elif cmd == "UNMUTE":
+                self._mute = False
             return True
         except Exception as err:
             _LOGGER.error("Failed to send %s (%s): %s", command, key, err)
@@ -203,24 +219,21 @@ class LocalBridge:
 
     async def get_device_status(self) -> dict[str, Any]:
         """Best-effort status (local API is limited compared to SmartThings)."""
-        info = await self._rest_device_info()
-        return info or {}
+        return await self._rest_device_info() or {}
 
     async def get_power_state(self) -> bool:
         """Return True if TV appears to be on."""
         try:
             info = await self._rest_device_info()
-            # If REST answers, the TV is at least network-reachable → treat as on
             if info:
                 self._power_on = True
                 self._available = True
                 return True
         except Exception:
             pass
-        # Fallback: try a lightweight key (some TVs answer only via WS)
+
         try:
             remote = await self._ensure_remote()
-            # No reliable power query on pure WS; keep last known
             self._available = remote is not None
             return self._power_on
         except Exception:
@@ -229,7 +242,7 @@ class LocalBridge:
             return False
 
     async def get_mute_state(self) -> bool:
-        """Local API does not expose mute state reliably → last known / False."""
+        """Local API does not expose mute state reliably → last known."""
         return self._mute
 
     async def get_volume(self) -> int | None:
@@ -237,9 +250,7 @@ class LocalBridge:
         return self._volume
 
     async def set_volume(self, volume: int) -> bool:
-        """Approximate set_volume by sending VOLUP/VOLDOWN (no absolute set)."""
-        # Pure local WS has no absolute volume set on most models.
-        # We can only relative-adjust. Callers should prefer VOLUME_UP/DOWN.
+        """Absolute volume is not supported on pure local WS."""
         _LOGGER.debug(
             "set_volume(%s) not supported natively on local WS – use VOLUME_UP/DOWN",
             volume,
@@ -271,14 +282,4 @@ class LocalBridge:
         return None
 
     async def get_current_app(self) -> str | None:
-        """Try to read current app via REST (works on many 2019+ models)."""
-        try:
-            if self._rest is None:
-                self._rest = SamsungTVAsyncRest(
-                    host=self.host, port=8001, timeout=self.timeout
-                )
-            # Some firmwares expose /api/v2/applications/current
-            # The library does not wrap it; we keep it best-effort.
-            return self._app_name
-        except Exception:
-            return None
+        return self._app_name

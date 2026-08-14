@@ -44,7 +44,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Samsung Remote from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
-    mode = entry.data.get(CONF_CONNECTION_MODE, MODE_CLOUD)
+    # Prefer explicit mode; fall back to heuristic so a local entry that only
+    # has "host" is never treated as cloud (and never touches SmartThings).
+    mode = entry.data.get(CONF_CONNECTION_MODE)
+    if mode is None:
+        if entry.data.get(CONF_HOST):
+            mode = MODE_LOCAL
+        else:
+            mode = MODE_CLOUD
 
     if mode == MODE_LOCAL:
         bridge = await _setup_local(hass, entry)
