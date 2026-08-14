@@ -3,10 +3,14 @@
   "name": "Samsung TV Remote",
   "codeowners": ["@Qlimuli"],
   "config_flow": true,
-  "dependencies": ["smartthings"],
+  "dependencies": [],
   "documentation": "https://github.com/Qlimuli/samsung-tv-remote-HA",
-  "iot_class": "cloud_polling",
+  "iot_class": "local_polling",
   "issue_tracker": "https://github.com/Qlimuli/samsung-tv-remote-HA/issues",
-  "requirements": ["aiohttp>=3.8.0"],
-  "version": "2.1.0"
+  "requirements": [
+    "aiohttp>=3.8.0",
+    "samsungtvws[async]>=2.6.0",
+    "wakeonlan>=3.0.0"
+  ],
+  "version": "3.0.0"
 }

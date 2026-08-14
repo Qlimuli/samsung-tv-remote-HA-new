@@ -2,40 +2,74 @@
   "config": {
     "step": {
       "user": {
-        "title": "Samsung TV Fernbedienung Einrichtung",
-        "description": "Wählen Sie Ihre SmartThings Integration für die Authentifizierung. {count} SmartThings Integration(en) gefunden.",
+        "title": "Samsung TV Remote – Verbindungsmodus",
+        "description": "Wähle, wie Home Assistant mit deinem Samsung TV kommunizieren soll.\n\n• **Lokal** – direkter WebSocket im LAN (empfohlen, keine Cloud, keine bezahlte API)\n• **Cloud** – über die bestehende SmartThings-Integration",
         "data": {
-          "smartthings_entry": "SmartThings Integration"
+          "connection_mode": "Verbindungsmodus"
+        }
+      },
+      "cloud": {
+        "title": "SmartThings-Integration",
+        "description": "Wähle deine SmartThings-Integration. {count} Integration(en) gefunden.",
+        "data": {
+          "smartthings_entry": "SmartThings-Integration"
         }
       },
       "select_tv": {
         "title": "Samsung TV auswählen",
-        "description": "{count} Samsung TV(s) in Ihrem SmartThings-Konto gefunden. Wählen Sie den TV, den Sie steuern möchten.",
+        "description": "{count} Samsung TV(s) in deinem SmartThings-Konto gefunden.",
         "data": {
           "device_id": "Samsung TV"
+        }
+      },
+      "local": {
+        "title": "Lokale TV-Einrichtung",
+        "description": "Gib die IP-Adresse deines Samsung TVs ein.\n\nBeim ersten Verbinden erscheint am TV ein Berechtigungs-Popup – bitte akzeptieren.\nDer Pairing-Token wird automatisch gespeichert.\n\nMAC-Adresse ist optional und wird nur für Wake-on-LAN benötigt (Einschalten aus dem Tiefschlaf).",
+        "data": {
+          "host": "TV-IP-Adresse",
+          "port": "WebSocket-Port (meist 8002)",
+          "device_name": "Anzeigename",
+          "mac": "MAC-Adresse (optional, für WOL)",
+          "token": "Pairing-Token (beim ersten Mal leer lassen)"
         }
       }
     },
     "error": {
-      "invalid_entry": "Ungültige SmartThings Integration ausgewählt",
+      "invalid_entry": "Ungültige SmartThings-Integration ausgewählt",
       "invalid_device": "Ungültiges Gerät ausgewählt",
-      "cannot_connect": "Verbindung zur SmartThings API nicht möglich",
-      "no_token": "Zugriffstoken konnte nicht aus SmartThings abgerufen werden. Bitte SmartThings erneut authentifizieren.",
-      "unknown": "Unbekannter Fehler aufgetreten"
+      "cannot_connect": "Keine Verbindung zum TV. TV muss an sein, im selben Netz und das Berechtigungs-Popup muss bestätigt werden.",
+      "no_token": "Kein gültiges SmartThings-Token verfügbar",
+      "unknown": "Unbekannter Fehler"
     },
     "abort": {
-      "no_smartthings": "Keine SmartThings Integration gefunden. Bitte richten Sie zuerst die SmartThings Integration ein.",
-      "no_tvs_found": "Keine Samsung TVs in Ihrem SmartThings-Konto gefunden. Stellen Sie sicher, dass Ihr TV mit SmartThings verbunden ist und die SmartThings Integration korrekt authentifiziert ist.",
-      "no_token": "Zugriffstoken konnte nicht aus SmartThings abgerufen werden. Bitte konfigurieren Sie Ihre SmartThings Integration neu.",
-      "already_configured": "Dieser TV ist bereits konfiguriert"
+      "no_smartthings": "Keine SmartThings-Integration gefunden. Richte zuerst SmartThings ein oder wähle den lokalen Modus.",
+      "no_tvs_found": "Keine Samsung TVs in deinem SmartThings-Konto gefunden.",
+      "already_configured": "Dieser TV ist bereits konfiguriert",
+      "no_token": "Kein gültiges SmartThings-Zugriffstoken gefunden"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Samsung TV Fernbedienung Optionen",
+        "title": "Samsung TV Remote Optionen",
         "data": {
           "scan_interval": "Aktualisierungsintervall (Sekunden)"
+        }
+      }
+    }
+  },
+  "services": {
+    "send_key": {
+      "name": "Taste senden",
+      "description": "Sendet eine Fernbedienungstaste an den Samsung TV",
+      "fields": {
+        "entry_id": {
+          "name": "Eintrags-ID",
+          "description": "Die Config-Entry-ID des Samsung TVs"
+        },
+        "key": {
+          "name": "Taste",
+          "description": "Die zu sendende Taste (z.B. POWER, VOLUME_UP, HOME)"
         }
       }
     }

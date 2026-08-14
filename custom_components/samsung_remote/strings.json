@@ -2,30 +2,50 @@
   "config": {
     "step": {
       "user": {
-        "title": "Samsung TV Remote Setup",
-        "description": "Select your SmartThings integration to use for authentication. Found {count} SmartThings integration(s).",
+        "title": "Samsung TV Remote – Connection Mode",
+        "description": "Choose how Home Assistant should talk to your Samsung TV.\n\n• **Local** – direct WebSocket on your LAN (recommended, no cloud, no paid API)\n• **Cloud** – via the existing SmartThings integration",
+        "data": {
+          "connection_mode": "Connection mode"
+        }
+      },
+      "cloud": {
+        "title": "SmartThings Integration",
+        "description": "Select your SmartThings integration. Found {count} integration(s).",
         "data": {
           "smartthings_entry": "SmartThings Integration"
         }
       },
       "select_tv": {
         "title": "Select Samsung TV",
-        "description": "Found {count} Samsung TV(s) in your SmartThings account. Select the TV you want to control.",
+        "description": "Found {count} Samsung TV(s) in your SmartThings account.",
         "data": {
           "device_id": "Samsung TV"
+        }
+      },
+      "local": {
+        "title": "Local TV Setup",
+        "description": "Enter the IP address of your Samsung TV.\n\nOn first connection the TV shows a permission popup – accept it.\nThe pairing token is stored automatically.\n\nMAC address is optional and only needed for Wake-on-LAN (power on when fully off).",
+        "data": {
+          "host": "TV IP address",
+          "port": "WebSocket port (usually 8002)",
+          "device_name": "Friendly name",
+          "mac": "MAC address (optional, for WOL)",
+          "token": "Pairing token (leave empty on first setup)"
         }
       }
     },
     "error": {
       "invalid_entry": "Invalid SmartThings integration selected",
       "invalid_device": "Invalid device selected",
-      "cannot_connect": "Cannot connect to SmartThings API",
+      "cannot_connect": "Cannot connect to the TV. Make sure it is on, on the same network, and accept the permission popup on the TV screen.",
+      "no_token": "No valid SmartThings token available",
       "unknown": "Unknown error occurred"
     },
     "abort": {
-      "no_smartthings": "No SmartThings integration found. Please set up the SmartThings integration first.",
-      "no_tvs_found": "No Samsung TVs found in your SmartThings account. Make sure your TV is connected to SmartThings.",
-      "already_configured": "This TV is already configured"
+      "no_smartthings": "No SmartThings integration found. Please set up the SmartThings integration first, or choose Local mode.",
+      "no_tvs_found": "No Samsung TVs found in your SmartThings account.",
+      "already_configured": "This TV is already configured",
+      "no_token": "Could not retrieve a valid SmartThings access token"
     }
   },
   "options": {

@@ -7,9 +7,83 @@ DOMAIN: Final = "samsung_remote"
 CONF_DEVICE_ID: Final = "device_id"
 CONF_DEVICE_NAME: Final = "device_name"
 CONF_SMARTTHINGS_ENTRY_ID: Final = "smartthings_entry_id"
+CONF_CONNECTION_MODE: Final = "connection_mode"
+CONF_HOST: Final = "host"
+CONF_PORT: Final = "port"
+CONF_TOKEN: Final = "token"
+CONF_MAC: Final = "mac"
+
+# Connection modes
+MODE_CLOUD: Final = "cloud"
+MODE_LOCAL: Final = "local"
 
 # SmartThings API
 SMARTTHINGS_API_BASE: Final = "https://api.smartthings.com/v1"
+
+# Local WebSocket key mapping (command → KEY_*)
+# Reference: samsungtvws / ha-samsungtv-tizen key lists
+LOCAL_KEY_MAP: Final = {
+    # Navigation
+    "UP": "KEY_UP",
+    "DOWN": "KEY_DOWN",
+    "LEFT": "KEY_LEFT",
+    "RIGHT": "KEY_RIGHT",
+    "OK": "KEY_ENTER",
+    "ENTER": "KEY_ENTER",
+    "BACK": "KEY_RETURN",
+    "HOME": "KEY_HOME",
+    "MENU": "KEY_MENU",
+    "EXIT": "KEY_EXIT",
+    # Volume
+    "MUTE": "KEY_MUTE",
+    "UNMUTE": "KEY_MUTE",  # toggle
+    "VOLUME_UP": "KEY_VOLUP",
+    "VOLUME_DOWN": "KEY_VOLDOWN",
+    # Playback
+    "PLAY": "KEY_PLAY",
+    "PAUSE": "KEY_PAUSE",
+    "STOP": "KEY_STOP",
+    "REWIND": "KEY_REWIND",
+    "FF": "KEY_FF",
+    "FAST_FORWARD": "KEY_FF",
+    # Power
+    "POWER": "KEY_POWER",
+    "POWER_ON": "KEY_POWER",
+    "POWER_OFF": "KEY_POWER",
+    # Source
+    "SOURCE": "KEY_SOURCE",
+    "HDMI": "KEY_HDMI",
+    "HDMI1": "KEY_HDMI1",
+    "HDMI2": "KEY_HDMI2",
+    "HDMI3": "KEY_HDMI3",
+    "HDMI4": "KEY_HDMI4",
+    # Channel
+    "CHANNEL_UP": "KEY_CHUP",
+    "CHANNEL_DOWN": "KEY_CHDOWN",
+    "PRECH": "KEY_PRECH",
+    "CH_LIST": "KEY_CH_LIST",
+    # Numbers
+    "0": "KEY_0",
+    "1": "KEY_1",
+    "2": "KEY_2",
+    "3": "KEY_3",
+    "4": "KEY_4",
+    "5": "KEY_5",
+    "6": "KEY_6",
+    "7": "KEY_7",
+    "8": "KEY_8",
+    "9": "KEY_9",
+    # Color
+    "RED": "KEY_RED",
+    "GREEN": "KEY_GREEN",
+    "YELLOW": "KEY_YELLOW",
+    "BLUE": "KEY_BLUE",
+    # Special
+    "GUIDE": "KEY_GUIDE",
+    "INFO": "KEY_INFO",
+    "TOOLS": "KEY_TOOLS",
+    "SETTINGS": "KEY_MENU",
+}
 
 
 # Navigation Button Commands
